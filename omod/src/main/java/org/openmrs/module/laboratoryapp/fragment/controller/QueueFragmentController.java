@@ -35,6 +35,8 @@ public class QueueFragmentController {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         String dateStr = sdf.format(new Date());
         model.addAttribute("currentDate", dateStr);
+        model.addAttribute("patientId", null);
+        model.addAttribute("gender", "Female");
         LaboratoryService ls = (LaboratoryService) Context.getService(LaboratoryService.class);
         Lab department = ls.getCurrentDepartment();
         Set<Concept> investigations = new HashSet<Concept>();
@@ -81,7 +83,7 @@ public class QueueFragmentController {
             }
 
 
-            simpleObjects = SimpleObject.fromCollection(tests, ui, "dateActivated", "patientIdentifier", "patientName", "gender", "age", "test.name", "orderId", "sampleId", "status");
+            simpleObjects = SimpleObject.fromCollection(tests, ui, "dateActivated", "patientIdentifier", "patientName", "gender", "age", "test.name", "orderId", "sampleId", "status","patientId");
         } catch (ParseException e) {
             e.printStackTrace();
             logger.error("Error when parsing order date!", e.getMessage());
@@ -156,5 +158,15 @@ public class QueueFragmentController {
         logger.warn("Order (" + orderId + ") not found");
         return SimpleObject.create("status", "fail", "error", "Order (" + orderId + ") not found");
     }
+	
+	public SimpleObject setVisitHistoryParameters(
+            @RequestParam(value = "patientId", required = false) Integer patientId,
+            @RequestParam(value = "gender", required = false) String gender,FragmentModel model ) {	
+			String revisedGend="Maleeel";
+            model.addAttribute("patientId", patientId);		
+            model.addAttribute("gender", revisedGend);		
+		
+	 return SimpleObject.create("patientId", "success", "message", patientId);
+	}
 
 }

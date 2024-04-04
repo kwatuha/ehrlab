@@ -138,9 +138,59 @@
 
 		jq("#reschedule-date").datepicker("option", "dateFormat", "dd/MM/yyyy");
 	});
+	
+	function showHistory(patientId) {
+	
+
+		 jq.post('${ui.actionLink("laboratoryapp", "queue", "setVisitHistoryParameters")}',
+			{ "patientId" : patientId, "gender" : 'FemaleD' },
+			function (data) {
+				 console.log(data)
+				 clinicalSummaryDialog.show();
+			},
+			'json'
+		);
+	}
+	
+	function showPatientHistory(patientId) {
+		     clinicalSummaryDialog.show();
+		 
+	}
+	var clinicalSummaryDialog;
+	jq(function(){
+		clinicalSummaryDialog = emr.setupConfirmationDialog({
+			dialogOpts: {
+				overlayClose: false,
+				close: true
+			},
+			selector: '#patient-history-form',
+			actions: {
+				cancel: function() {
+					clinicalSummaryDialog.close();
+				}
+			}
+		});
+
+		ko.applyBindings(testDetails, jq("#patient-history-form")[0]);
+	});
+	
+	function showPatientHistory(orderId) {
+	
+	
+		var details = ko.utils.arrayFirst(queueData.tests(), function(item) {
+			return item.orderId === orderId;
+		});
+		jq("#reschedule-form #patient").val(details().patientId);
+		testDetails.details(details);
+		clinicalSummaryDialog.show();
+		//rescheduleDialog.show();
+	}
+
 </script>
 
 <div>
+
+
 	<form>
 		<fieldset>
 			<div class="onerow">
@@ -190,8 +240,9 @@
 			<th>Name</th>
 			<th style="width: 53px">Gender</th>
 			<th style="width: 30px">Age</th>
-			<th>Test</th>
+			<th>Test</th>			
 			<th style="width: 70px;">Sample ID</th>
+			<th>Patient</th>
 			<th style="width: 60px;">Action</th>
 		</tr>
 	</thead>
@@ -207,7 +258,12 @@
 				<span data-bind="text: sampleId"></span>
 				<span data-bind="ifnot: sampleId">&nbsp; &nbsp;&#8212;</span>
 			</td>
-
+            <td>
+			<span>
+						<a title="History" data-bind="attr: { href: 'javascript:showPatientHistory(' + orderId + ')' }">Patient	History</a>
+			</span>
+			
+			</td>
 			<td>
 				<center id="action-icons">
 					<span data-bind="if: status" class="accepted">Accepted</span>
@@ -281,12 +337,41 @@
 
 
 			<input type="hidden" id="order" name="order" >
+			<input type="hidden" id="patient" name="patient" >
 
 			<!-- Allow form submission with keyboard without duplicating the dialog button -->
 			<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
 		</form>
 
 		<span class="button confirm right"> Confirm </span>
+        <span class="button cancel"> Cancel </span>
+	</div>
+</div>
+<div id="patient-history-form" title="Patient History" class="dialog">
+
+	<div class="dialog-header">
+      <i class="icon-repeat"></i>
+      <h3>Patient History</h3>
+    </div>
+<input type="hidden" id="order" name="order" >
+	<div class="dialog-content">
+		<form>
+			<p>
+				<div class="dialog-data">Patient Name:</div>
+				<div class="inline" data-bind="text:details().patientId"></div>
+			</p>
+
+			<p>
+				<div class="dialog-data">Test Name:</div>
+				<div class="inline" data-bind="text:details().gender"></div>
+			</p>
+			
+			<p>
+				<div class="dialog-data">Otherdetai Name:</div>
+				<div class="inline" data-bind="text:details().patientIdentifier"></div>
+			</p>
+			
+			
         <span class="button cancel"> Cancel </span>
 	</div>
 </div>
