@@ -175,12 +175,9 @@
 	});
 	
 	function showPatientHistory(orderId) {
-	
-	
 		var details = ko.utils.arrayFirst(queueData.tests(), function(item) {
 			return item.orderId === orderId;
 		});
-		jq("#reschedule-form #patient").val(details().patientId);
 		testDetails.details(details);
 		clinicalSummaryDialog.show();
 		//rescheduleDialog.show();
@@ -337,7 +334,6 @@
 
 
 			<input type="hidden" id="order" name="order" >
-			<input type="hidden" id="patient" name="patient" >
 
 			<!-- Allow form submission with keyboard without duplicating the dialog button -->
 			<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
@@ -348,30 +344,33 @@
 	</div>
 </div>
 <div id="patient-history-form" title="Patient History" class="dialog">
-
 	<div class="dialog-header">
       <i class="icon-repeat"></i>
       <h3>Patient History</h3>
     </div>
-<input type="hidden" id="order" name="order" >
+
 	<div class="dialog-content">
 		<form>
 			<p>
-				<div class="dialog-data">Patient Name:</div>
+				<div class="dialog-data">Patient ID:</div>
 				<div class="inline" data-bind="text:details().patientId"></div>
+			</p>
+			
+			<p>
+				<div class="dialog-data">Patient Name:</div>
+				<div class="inline" data-bind="text:details().patientName"></div>
 			</p>
 
 			<p>
-				<div class="dialog-data">Test Name:</div>
+				<div class="dialog-data">Gender:</div>
 				<div class="inline" data-bind="text:details().gender"></div>
 			</p>
 			
 			<p>
-				<div class="dialog-data">Otherdetai Name:</div>
+				<div class="dialog-data">Patient Identifier:</div>
 				<div class="inline" data-bind="text:details().patientIdentifier"></div>
 			</p>
-			
-			
+
         <span class="button cancel"> Cancel </span>
 	</div>
 </div>
