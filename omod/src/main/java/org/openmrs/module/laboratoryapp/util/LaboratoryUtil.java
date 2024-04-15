@@ -52,7 +52,8 @@ public class LaboratoryUtil {
 	 //ghanshyam 7-august-2013 code review bug
 	//private static SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 	private static Map<Concept, String> conceptNames = new HashMap<Concept, String>();
-
+	
+   public  static Integer selectedQueuePatient;
 	/**
 	 * Generate list of test model using orders
 	 *
@@ -550,4 +551,12 @@ public class LaboratoryUtil {
 				concept.getConceptId());
 		return cn.getUnits();
 	}
+	
+	public static Integer getSelectedQueuePatient() {
+        return selectedQueuePatient;
+    }
+
+    public static Integer setSelectedQueuePatient(Integer selectedQueuePatient) {
+        return selectedQueuePatient = selectedQueuePatient;
+    }
 }

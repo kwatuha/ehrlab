@@ -2,19 +2,51 @@
 	 ui.decorateWith("kenyaemr", "standardPage")
 
 	ui.includeJavascript("laboratoryapp", "jQuery.print.js")
-	ui.includeJavascript("ehrconfigs", "knockout-2.2.1.js")
+	ui.includeJavascript("ehrconfigs", "knockout-3.4.0.js")
 	ui.includeJavascript("ehrconfigs", "emr.js")
 	ui.includeJavascript("ehrconfigs", "jquery.simplemodal.1.4.4.min.js")
  	ui.includeJavascript("ehrconfigs", "moment.js")
-	 ui.includeJavascript("ehrconfigs", "jquery.dataTables.min.js")
+	ui.includeJavascript("ehrconfigs", "jquery.dataTables.min.js")
 	 ui.includeCss("ehrconfigs", "jquery.dataTables.min.css")
 	 ui.includeCss("ehrconfigs", "onepcssgrid.css")
 	 ui.includeCss("ehrconfigs", "referenceapplication.css")
-
+     ui.includeJavascript("patientdashboardapp", "jq.slimscroll.js")
 %>
 
 <script>
 	var editResultsDate;
+	var queueData,
+		rescheduleDialog,
+		rescheduleForm,
+		acceptForm,
+		scheduleDate,
+		orderId,
+		defaultSampleId,
+		details,
+		testDetails;
+		jq(window).on('load', jq.noConflict())
+	jq(function(){
+		queueData = new QueueData();
+		rescheduleDialog, rescheduleForm, acceptForm;
+		scheduleDate = jq("#reschedule-date-field");
+		orderId = jq("#order");
+		defaultSampleId = jq("#defaultSampleId");
+		details = { 'patientName' : 'Patient Name', 'dateActivated' : 'Start Date', 'test' : { 'name' : 'Test Name' } };
+		testDetails = { details : ko.observable(details) }
+	});
+	
+   function QueueData() {
+		self = this;
+		self.tests = ko.observableArray([]);
+	}
+
+	
+	jq(function(){
+		ko.applyBindings(queueData, jq("#test-queue")[0]);
+
+		jq("#reschedule-date").datepicker("option", "dateFormat", "dd/MM/yyyy");
+	});
+	
 	
 	jq(function(){
 		jq(".lab-tabs").tabs();
@@ -177,7 +209,170 @@
 		});
 	});
 	
+	var clinicalSummaryDialog;
+	jq(function(){
+		clinicalSummaryDialog = emr.setupConfirmationDialog({
+			dialogOpts: {
+				overlayClose: false,
+				close: true
+			},
+			selector: '#patient-history-form',
+			actions: {
+				cancel: function() {
+					clinicalSummaryDialog.close();
+				}
+			}
+		});		  
+	});
 	
+	jq.noConflict();
+	
+		function acceptTest() {
+		jq.post('${ui.actionLink("laboratoryapp", "queue", "acceptLabTest")}',
+			{ 'orderId' : orderId.val(), 'confirmedSampleId': defaultSampleId.val()},
+			function (data) {
+				if (data.status === "success") {
+					var acceptedTest = ko.utils.arrayFirst(queueData.tests(), function(item) {
+						return item.orderId == orderId.val();
+					});
+					queueData.tests.remove(acceptedTest);
+					acceptedTest.status = "accepted";
+					acceptedTest.sampleId = data.sampleId;
+					queueData.tests.push(acceptedTest);
+				} else if (data.status === "fail") {
+					jq().toastmessage('showErrorToast', data.error);
+				}
+			},
+			'json'
+		);
+	}
+
+	jq(function(){
+		acceptDialog = emr.setupConfirmationDialog({
+			dialogOpts: {
+				overlayClose: false,
+				close: true
+			},
+			selector: '#accept-form',
+			actions: {
+				confirm: function() {
+					acceptTest();
+					acceptDialog.close();
+				},
+				cancel: function() {
+					acceptDialog.close();
+				}
+			}
+		});
+        ko.cleanNode(jq("#reschedule-form")[0]);
+		ko.applyBindings(testDetails, jq("#reschedule-form")[0]);
+	});
+
+	jq(function(){
+		rescheduleDialog = emr.setupConfirmationDialog({
+			dialogOpts: {
+				overlayClose: false,
+				close: true
+			},
+			selector: '#reschedule-form',
+			actions: {
+				confirm: function() {
+					saveQueueSchedule();
+					rescheduleDialog.close();
+				},
+				cancel: function() {
+					rescheduleDialog.close();
+				}
+			}
+		});
+        ko.cleanNode(jq("#reschedule-form")[0]);
+		ko.applyBindings(testDetails, jq("#reschedule-form")[0]);
+
+	});
+
+	function saveQueueSchedule() {
+		jq.post('${ui.actionLink("laboratoryapp", "queue", "rescheduleTest")}',
+			{ "orderId" : orderId.val(), "rescheduledDate" : moment(scheduleDate.val()).format('DD/MM/YYYY') },
+			function (data) {
+				if (data.status === "fail") {
+					jq().toastmessage('showErrorToast', data.error);
+				} else {
+					jq().toastmessage('showSuccessToast', data.message);
+					var rescheduledTest = ko.utils.arrayFirst(queueData.tests(), function(item) {
+						return item.orderId === orderId.val();
+					});
+					queueData.tests.remove(rescheduledTest);
+				}
+			},
+			'json'
+		);
+	}
+
+	function reschedule(orderId) {
+		jq("#reschedule-form #order").val(orderId);
+		var details = ko.utils.arrayFirst(queueData.tests(), function(item) {
+			return item.orderId === orderId;
+		});
+		testDetails.details(details);
+		rescheduleDialog.show();
+	}
+
+	function accept(orderId) {
+		jq("#reschedule-form #order").val(orderId);
+
+		jq.post('${ui.actionLink("laboratoryapp", "queue", "fetchSampleID")}',
+			{ 'orderId' : orderId },
+			function (data) {
+				if (data) {
+
+					defaultSampleId.val(data.defaultSampleId);
+					acceptDialog.show();
+
+				} else{
+					jq().toastmessage('showErrorToast', data.error);
+				}
+			},
+			'json'
+		);
+	}
+	 	
+	 
+	var clinicalSummaryDialog;
+	jq(function(){
+		clinicalSummaryDialog = emr.setupConfirmationDialog({
+			dialogOpts: {
+				overlayClose: false,
+				close: true
+			},
+			selector: '#patient-history-form',
+			actions: {
+				cancel: function() {
+					clinicalSummaryDialog.close();
+				}
+			}
+		});
+        ko.cleanNode(jq("#patient-history-form")[0]);        
+		ko.applyBindings(testDetails, jq("#patient-history-form")[0]);
+	});
+	
+function showCurrentPatientHistory(orderId) { 
+	var details = ko.utils.arrayFirst(queueData.tests(), function(item) {
+			return item.orderId === orderId;
+		});
+		testDetails.details(details);
+		var patientId=details.patientId;
+		var gender=details.gender;
+		ui.navigate('laboratoryapp', 'main', { patientId: patientId,gender:gender});	
+}
+
+jq( document ).ready(function() {
+            var url =window.location.href;
+			 if( url.includes('patientId=')){
+			  clinicalSummaryDialog.show();
+			  jq('.slimScrollDiv').hide();
+			 }  
+}); 
+	 
 </script>
 <style>
 	.new-patient-header .identifiers {
@@ -309,6 +504,12 @@
 </style>
 <header>
 </header>
+ 
+
+	
+	  
+	
+	
 <body>
 	<div class="clear"></div>
 	<div class="container">
@@ -341,6 +542,21 @@
 				<span>${date}</span>
 			</div>
 			
+			<!--SUMMARY DIALOG -->
+     <%if(patientId){%>
+	<div id="patient-history-form" class="dialog" style="display: none; width: 900px">
+		<div class="dialog-header">
+			<i class="icon-folder-open"></i>
+			<h3>Clinical Summary </h3>
+			<i class="icon-remove cancel right " style="padding-right: 10px"></i>
+		</div>
+		<div class="dialog-content">
+		
+			${ ui.includeFragment("patientdashboardapp", "visitSummary", [patientId:patientId,gender:gender]) }
+		</div>
+
+	</div>
+	    <%}%>
 			<div class="lab-tabs" style="margin-top: 40px!important;">
 				<ul id="inline-tabs">
 					<li><a href="#queue">Queue</a></li>

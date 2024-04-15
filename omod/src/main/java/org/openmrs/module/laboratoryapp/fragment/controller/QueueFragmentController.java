@@ -159,14 +159,4 @@ public class QueueFragmentController {
         return SimpleObject.create("status", "fail", "error", "Order (" + orderId + ") not found");
     }
 	
-	public SimpleObject setVisitHistoryParameters(
-            @RequestParam(value = "patientId", required = false) Integer patientId,
-            @RequestParam(value = "gender", required = false) String gender,FragmentModel model ) {	
-			String revisedGend="Maleeel";
-            model.addAttribute("patientId", patientId);		
-            model.addAttribute("gender", revisedGend);		
-		
-	 return SimpleObject.create("patientId", "success", "message", patientId);
-	}
-
 }
